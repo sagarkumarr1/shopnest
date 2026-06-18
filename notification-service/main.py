@@ -20,7 +20,7 @@ app = FastAPI(
 )
 
 # Config
-REDIS_URL = os.environ.get('REDIS_URL', 'rediss://red-d8hqustdt1ts73ejv74g:1Hciw4i64CAReb3GfILfU5OcxEdT5H5a@singapore-keyvalue.render.com:6379')
+REDIS_URL = REDIS_URL = os.getenv("REDIS_URL")
 EMAIL_HOST = os.environ.get('EMAIL_HOST', 'smtp.gmail.com')
 EMAIL_PORT = int(os.environ.get('EMAIL_PORT', '587'))
 EMAIL_USER = os.environ.get('EMAIL_USER', '')
