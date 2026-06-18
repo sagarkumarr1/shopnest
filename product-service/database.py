@@ -5,13 +5,22 @@ import os
 
 DATABASE_URL = os.environ.get(
     'DATABASE_URL',
-    'postgresql://product_user:product_pass@localhost:5434/product_db'
+    'sqlite:///./product_db.sqlite3'
 )
 
-engine = create_engine(DATABASE_URL)
+# 1. Engine create kiya
+engine = create_engine(
+    DATABASE_URL,
+    connect_args={"check_same_thread": False}  # SQLite ke liye zaroori hai
+)
+
+# 2. SessionLocal ko define kiya (Yeh aapke code mein miss tha)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+# 3. Base class ko define kiya (Isi ki wajah se main.py mein ImportError tha)
 Base = declarative_base()
 
+# 4. DB Dependency function
 def get_db():
     db = SessionLocal()
     try:
