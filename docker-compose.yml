@@ -1,0 +1,100 @@
+version: '3.8'
+
+services:
+
+  # ── DATABASES ──
+  auth-db:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: auth_db
+      POSTGRES_USER: auth_user
+      POSTGRES_PASSWORD: auth_pass
+    ports:
+      - "5433:5432"
+    volumes:
+      - auth-db-data:/var/lib/postgresql/data
+
+  product-db:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: product_db
+      POSTGRES_USER: product_user
+      POSTGRES_PASSWORD: product_pass
+    ports:
+      - "5434:5432"
+    volumes:
+      - product-db-data:/var/lib/postgresql/data
+
+  # ── REDIS ──
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  # ── AUTH SERVICE ──
+  auth-service:
+    build: ./auth-service
+    ports:
+      - "8001:8001"
+    environment:
+      DATABASE_URL: postgresql://auth_user:auth_pass@auth-db:5432/auth_db
+      SECRET_KEY: shopnest-auth-secret-key
+      DEBUG: "True"
+    depends_on:
+      - auth-db
+    volumes:
+      - ./auth-service:/app
+
+  # ── PRODUCT SERVICE ──
+  product-service:
+    build: ./product-service
+    ports:
+      - "8002:8002"
+    environment:
+      DATABASE_URL: postgresql://product_user:product_pass@product-db:5432/product_db
+      AUTH_SERVICE_URL: http://auth-service:8001
+      REDIS_URL: redis://redis:6379/0
+      DEBUG: "True"
+    depends_on:
+      - product-db
+      - redis
+      - auth-service
+    volumes:
+      - ./product-service:/app
+
+  # ── NOTIFICATION SERVICE ──
+  notification-service:
+    build: ./notification-service
+    ports:
+      - "8003:8003"
+    environment:
+      REDIS_URL: redis://redis:6379/0
+      EMAIL_HOST: smtp.gmail.com
+      EMAIL_PORT: "587"
+      EMAIL_USER: your_email@gmail.com
+      EMAIL_PASSWORD: your_app_password
+      DEBUG: "True"
+    depends_on:
+      - redis
+    volumes:
+      - ./notification-service:/app
+
+  # ── API GATEWAY ──
+  api-gateway:
+    build: ./api-gateway
+    ports:
+      - "8000:8000"
+    environment:
+      AUTH_SERVICE_URL: http://auth-service:8001
+      PRODUCT_SERVICE_URL: http://product-service:8002
+      NOTIFICATION_SERVICE_URL: http://notification-service:8003
+    depends_on:
+      - auth-service
+      - product-service
+      - notification-service
+    volumes:
+      - ./api-gateway:/app
+
+volumes:
+  auth-db-data:
+  product-db-data:
